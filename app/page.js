@@ -1,95 +1,133 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+import React, { useState } from 'react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import DragItem from './(components)/DragItem';
+import DropZone from './(components)/DropZone';
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+const Home = () => {
+    const initialItems = [
+        { id: 1, name: "Item 1" },
+        { id: 2, name: "Item 2" },
+        { id: 3, name: "Item 3" }
+    ];
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+    const [dragItems, setDragItems] = useState(initialItems);
+    const [droppedItems, setDroppedItems] = useState([]);
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+    const handleDrop = (item) => {
+        // Remove the item from dragItems
+        setDragItems((prevItems) => prevItems.filter(dragItem => dragItem.name !== item.name));
+        
+        // Add the item to droppedItems
+        setDroppedItems((prevItems) => [...prevItems, item]);
+    };
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+    const handleRemoveItem = (index) => {
+        // Get the item to be removed from the droppedItems list
+        const removedItem = droppedItems[index];
+        
+        // Remove the item from droppedItems
+        const updatedDroppedItems = [...droppedItems];
+        updatedDroppedItems.splice(index, 1);
+        setDroppedItems(updatedDroppedItems);
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
-}
+        // Find the original index of the item in initialItems
+        const originalIndex = initialItems.findIndex(item => item.name === removedItem.name);
+        
+        // Add the removed item back to dragItems at its original index
+        setDragItems((prevItems) => {
+            const updatedDragItems = [...prevItems];
+            updatedDragItems.splice(originalIndex, 0, removedItem);
+            return updatedDragItems;
+        });
+    };
+
+    const handleClearDropZone = () => {
+        // Move all items from the drop zone back to the drag zone
+        const updatedDragItems = [...dragItems, ...droppedItems];
+        setDragItems(updatedDragItems);
+        setDroppedItems([]);
+    };
+
+    return (
+        <DndProvider backend={HTML5Backend}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    width: '30%'
+                }}>
+                    <div style={{
+                        border: '1px solid #ccc',
+                        padding: '10px',
+                        borderRadius: '5px'
+                    }}>
+                        <h2 style={{ marginBottom: '10px' }}>Drag Items</h2>
+                        {dragItems.map((item) => (
+                            <DragItem key={item.id} name={item.name} />
+                        ))}
+                        {dragItems.length === 0 && <p style={{ marginBottom: '10px' }}>No items to drag</p>}
+                    </div>
+                    <div style={{
+                        border: '1px solid #ccc',
+                        padding: '10px',
+                        borderRadius: '5px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                    }}>
+                        <h2 style={{ marginBottom: '10px' }}>Drop Zone</h2>
+                        <DropZone onDrop={handleDrop} />
+                        {droppedItems.map((item, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    border: '1px solid #ccc',
+                                    padding: '10px',
+                                    borderRadius: '5px',
+                                    marginTop: '10px',
+                                    backgroundColor: 'lightblue',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    width: '100%',
+                                }}>
+                                <p style={{ marginRight: '10px' }}>{item.name}</p>
+                                <button
+                                  style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', color: 'red', fontSize: '16px', padding: '0 10px' }}
+                                  onClick={() => handleRemoveItem(index)}>
+                                    X
+                                </button>
+                            </div>
+                        ))}
+                        {droppedItems.length > 1 && (
+                            <button
+                                style={{
+                                    marginTop: '20px',
+                                    padding: '5px 10px',
+                                    backgroundColor: 'red',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={handleClearDropZone}
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </DndProvider>
+    );
+};
+
+export default Home;
